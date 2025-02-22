@@ -1,7 +1,0 @@
-Write filters for following queries
-1.	Get data about the movies having imdb rates less than tomatoes viewer rating
-2.	Get data about the movies on only Russian language
-3.	Get data about the movies having “Action” and “Comedy” genres
-4.	Get data about the movies having neither “Action” nor “Comedy’ genres
-5.	Get titles of two movies having maximal number of awards wins
-6.	Group by imdb rating of the movies released on 2010 year with specifying the titles for each rating value
