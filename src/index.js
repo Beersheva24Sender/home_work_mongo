@@ -5,7 +5,8 @@ dotenv.config();
 const {
   CONNECTION_STRING,
   DB_NAME,
-  COLLECTION_NAME
+  COLLECTION_NAME_MOVIES,
+  COLLECTION_NAME_COMMENTS
 } = process.env;
 
 const connectionStr = `${CONNECTION_STRING}`;
@@ -25,9 +26,18 @@ connectToDatabase();
 
 async function getFilteredMovies(pipeline) {
   try {
-    return await mongoConnection.getCollection(COLLECTION_NAME).aggregate(pipeline).toArray();
+    return await mongoConnection.getCollection(COLLECTION_NAME_MOVIES).aggregate(pipeline).toArray();
   } catch (err) {
     console.error("Error fetching filtered movies:", err);
+    throw err;
+  }
+}
+
+async function getFilteredComments(pipeline) {
+  try {
+    return await mongoConnection.getCollection(COLLECTION_NAME_COMMENTS).aggregate(pipeline).toArray();
+  } catch (err) {
+    console.error("Error fetching filtered comments:", err);
     throw err;
   }
 }
@@ -38,25 +48,25 @@ async function runQueries() {
     const pipeline1 = [
       { $match: { $expr: { $lt: ["$imdb.rating", "$tomatoes.viewer.rating"] } } }
     ];
-    console.log("Pipeline 1 results:", await getFilteredMovies(pipeline1));
+    //console.log("Pipeline 1 results:", await getFilteredMovies(pipeline1));
 
     // Pipeline for movies with exactly "Russian" as language
     const pipeline2 = [
       { $match: { languages: ["Russian"] } }
     ];
-    console.log("Pipeline 2 results:", await getFilteredMovies(pipeline2));
+    //console.log("Pipeline 2 results:", await getFilteredMovies(pipeline2));
 
     // Pipeline for movies having both "Action" and "Comedy" genres
     const pipeline3 = [
       { $match: { genres: { $all: ["Action", "Comedy"] } } }
     ];
-    console.log("Pipeline 3 results:", await getFilteredMovies(pipeline3));
+    //console.log("Pipeline 3 results:", await getFilteredMovies(pipeline3));
 
     // Pipeline for movies having neither "Action" nor "Comedy" genres
     const pipeline4 = [
       { $match: { genres: { $nin: ["Action", "Comedy"] } } }
     ];
-    console.log("Pipeline 4 results:", await getFilteredMovies(pipeline4));
+    //console.log("Pipeline 4 results:", await getFilteredMovies(pipeline4));
 
     // Pipeline for the top two movies with the maximum awards wins (projecting only title)
     const pipeline5 = [
@@ -64,14 +74,33 @@ async function runQueries() {
       { $limit: 2 },
       { $project: { _id: 0, title: 1 } }
     ];
-    console.log("Pipeline 5 results:", await getFilteredMovies(pipeline5));
+    //console.log("Pipeline 5 results:", await getFilteredMovies(pipeline5));
 
     // Pipeline for grouping movies released in 2010 by imdb.rating with their titles
     const pipeline6 = [
       { $match: { year: 2010 } },
       { $group: { _id: "$imdb.rating", titles: { $push: "$title" } } }
     ];
-    console.log("Pipeline 6 results:", await getFilteredMovies(pipeline6));
+    //console.log("Pipeline 6 results:", await getFilteredMovies(pipeline6));
+
+    //Pipeline for 5 first comments and showing the title in place of movie id
+    const pipeline7 = [
+      {
+        $lookup: {
+          from: "movies",
+          localField: "movie_id",
+          foreignField: "_id",
+          as: "movie_info"
+        }
+      },
+
+      { $limit: 5 },
+
+      { $match: { "movie_info.0": { $exists: true } } },
+    ];
+
+    console.log("Pipeline 7 results:", await getFilteredComments(pipeline7));
+
   } catch (error) {
     console.error("Error fetching filtered movies:", err);
     throw err;
